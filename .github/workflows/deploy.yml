@@ -28,10 +28,7 @@ jobs:
          aws-region: us-east-1
          
      - name: Initialize Terraform
-       run: terraform init
- 
-     - name: Terraform Plan
-       run: terraform plan -destroy
+       run: terraform init ./taskmanager 
  
      - name: Apply Terraform changes
-       run: terraform apply -auto-approve
+       run: terraform apply -auto-approve ./taskmanager
