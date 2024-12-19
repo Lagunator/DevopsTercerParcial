@@ -33,6 +33,9 @@ jobs:
      - name: Destroy existing resources (if any)
        run: terraform destroy -auto-approve
 
+     - name: plan Terraform changes
+       run: terraform plan
+
      - name: Apply Terraform changes
        run: terraform apply -auto-approve
 
