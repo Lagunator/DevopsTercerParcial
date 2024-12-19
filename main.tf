@@ -2,9 +2,27 @@ provider "aws" {
   region = "us-east-1"
 }
 
+terraform {
+ backend "s3" {
+   bucket         = "deployfinaltest"
+   key            = "global/s3/terraform.tfstate"
+   region         = "us-east-1"
+   dynamodb_table = "deployfinaltest"
+   encrypt        = true
+ }
+}
+
+# Bloque que asegura que cualquier infraestructura anterior es destruida antes de ejecutar nuevos cambios
+resource "null_resource" "ensure_clean_state" {
+  provisioner "local-exec" {
+    command = "terraform destroy -auto-approve"
+  }
+}
+
+# Resto de los recursos Terraform...
 resource "aws_security_group" "ec2_sg" {
   name_prefix = "ec2-sg-"
-  
+
   ingress {
     from_port   = 22
     to_port     = 22
@@ -42,7 +60,7 @@ resource "aws_security_group" "ec2_sg" {
 }
 
 resource "aws_instance" "ec2_instance" {
-  ami           = "ami-0453ec754f44f9a4a"  
+  ami           = "ami-0453ec754f44f9a4a"
   instance_type = "t2.micro"
 
   user_data = <<-EOF
@@ -78,21 +96,9 @@ resource "aws_instance" "ec2_instance" {
               sudo service nginx restart
               EOF
 
-              
-
   tags = {
     Name = "taskmanager-ec2"
   }
-}
-
-terraform {
- backend "s3" {
-   bucket         = "deployfinaltest"
-   key            = "global/s3/terraform.tfstate"
-   region         = "us-east-1"
-   dynamodb_table = "deployfinaltest"
-   encrypt        = true
- }
 }
 
 output "ec2_public_ip" {
