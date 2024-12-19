@@ -2,17 +2,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-terraform {
- backend "s3" {
-   bucket         = "deployfinaltest"
-   key            = "global/s3/terraform.tfstate"
-   region         = "us-east-1"
-   dynamodb_table = "deployfinaltest"
-   encrypt        = true
- }
-}
-
-# Bloque que asegura que cualquier infraestructura anterior es destruida antes de ejecutar nuevos cambios
 resource "null_resource" "ensure_clean_state" {
   provisioner "local-exec" {
     command = "terraform destroy -auto-approve"
@@ -65,35 +54,10 @@ resource "aws_instance" "ec2_instance" {
 
   user_data = <<-EOF
               #!/bin/bash
-              # Instalar Docker y Docker Compose
               sudo yum update -y
               sudo yum install -y docker
-              sudo yum install -y python3
-              sudo pip3 install docker-compose
               sudo service docker start
               sudo usermod -aG docker ec2-user
-
-              # Clonar el repositorio que contiene docker-compose.yml
-              git clone https://github.com/Lagunator/DevopsFinalTest.git /home/ec2-user/taskmanager
-
-              # Ir al directorio y ejecutar Docker Compose
-              cd /home/ec2-user/taskmanager
-              sudo docker-compose up -d
-
-              # Instalar Nginx (si es necesario para el proxy reverso)
-              sudo yum install -y nginx
-              sudo service nginx start
-              sudo bash -c 'echo "server {
-                  listen 80;
-                  location / {
-                    proxy_pass http://localhost:3000;
-                    proxy_set_header Host \$host;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto \$scheme;
-                  }
-                }" > /etc/nginx/conf.d/default.conf'
-              sudo service nginx restart
               EOF
 
   tags = {
