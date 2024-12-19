@@ -2,12 +2,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-resource "null_resource" "ensure_clean_state" {
-  provisioner "local-exec" {
-    command = "terraform destroy -auto-approve"
-  }
-}
-
 # Resto de los recursos Terraform...
 resource "aws_security_group" "ec2_sg" {
   name_prefix = "ec2-sg-"
@@ -49,15 +43,20 @@ resource "aws_security_group" "ec2_sg" {
 }
 
 resource "aws_instance" "ec2_instance" {
-  ami           = "ami-0453ec754f44f9a4a"
+  ami           = "ami-0e2c8caa4b6378d8c"
   instance_type = "t2.micro"
+  key_name = "ec2key"
+  security_groups = [aws_security_group.ec2_sg.name]
 
   user_data = <<-EOF
               #!/bin/bash
-              sudo yum update -y
-              sudo yum install -y docker
-              sudo service docker start
-              sudo usermod -aG docker ec2-user
+              sudo apt update -y
+              sudo apt install -y docker.io nginx
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sudo systemctl start nginx
+              sudo systemctl enable nginx
+              sudo usermod -aG docker ubuntu
               EOF
 
   tags = {
