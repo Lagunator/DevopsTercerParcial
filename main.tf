@@ -9,7 +9,7 @@ resource "aws_security_group" "ec2_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Permite SSH desde cualquier dirección IPv4
+    cidr_blocks = ["0.0.0.0/0"] 
   }
 
   ingress {
@@ -78,9 +78,21 @@ resource "aws_instance" "ec2_instance" {
               sudo service nginx restart
               EOF
 
+              
+
   tags = {
     Name = "taskmanager-ec2"
   }
+}
+
+terraform {
+ backend "s3" {
+   bucket         = "deployfinaltest"
+   key            = "global/s3/terraform.tfstate"
+   region         = "us-east-1"
+   dynamodb_table = "deployfinaltest"
+   encrypt        = true
+ }
 }
 
 output "ec2_public_ip" {
