@@ -1,4 +1,4 @@
-name: CI/CD Pipeline - Deploy Backend and Frontend
+name: Deploy to EC2
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,22 +21,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 3. Build Docker images
-      - name: Build Docker images
-        run: |
-          # Build Backend
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/backend-image:latest ./backend
-          # Build Frontend
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/frontend-image:latest ./frontend
-
-      # 4. Push Docker images to Docker Hub
-      - name: Push Docker images to Docker Hub
-        run: |
-          # Push Backend Image
-          docker push ${{ secrets.DOCKER_USERNAME }}/backend-image:latest
-          # Push Frontend Image
-          docker push ${{ secrets.DOCKER_USERNAME }}/frontend-image:latest
-      # 5. SSH into EC2 and Pull Docker Images
+      # 3. Conexión SSH al EC2
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.8
         with:
@@ -45,5 +30,16 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            docker pull ${{ secrets.DOCKER_USERNAME }}/backend-image:latest
-            docker pull ${{ secrets.DOCKER_USERNAME }}/frontend-image:latest
+            # Descargar imágenes desde Docker Hub
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/backend-image:latest
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/frontend-image:latest
+
+            # Detener contenedores antiguos (si los hay)
+            sudo docker stop backend-container || true
+            sudo docker rm backend-container || true
+            sudo docker stop frontend-container || true
+            sudo docker rm frontend-container || true
+
+            # Iniciar nuevos contenedores
+            sudo docker run -d --name backend-container -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/backend-image:latest
+            sudo docker run -d --name frontend-container -p 80:80 ${{ secrets.DOCKER_USERNAME }}/frontend-image:latest
